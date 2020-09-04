@@ -16,7 +16,7 @@
 #include <helib/helib.h>
 #include <helib/debugging.h>
 
-void squareWithThinBoot(FHEPubKey& pk, Ctxt& c)
+void squareWithThinBoot(helib::PubKey& pk, helib::Ctxt& c)
 {
   if (c.bitCapacity() <= 50) {
     pk.thinReCrypt(c);
@@ -36,9 +36,9 @@ static void BM_thinboot(benchmark::State& state,
                         std::vector<long> gens,
                         std::vector<long> ords)
 {
-  NTL::Vec<long> mvec = convert<NTL::Vec<long>>(mvector);
+  NTL::Vec<long> mvec = helib::convert<NTL::Vec<long>>(mvector);
   // clang-format off
-  std::cout << "m=" << m
+  std::cout << "1m=" << m
             << ", p=" << p
             << ", r=" << r
             << ", bits=" << bits
@@ -46,12 +46,12 @@ static void BM_thinboot(benchmark::State& state,
             << ", skHwt=" << t
             << ", c_m=" << c_m
             << ", mvec=" << mvec
-            << ", gens=" << gens
-            << ", ords=" << ords
+//            << ", gens=" << gens
+//            << ", ords=" << ords
             << std::endl;
   // clang-format on
   std::cout << "Initialising context object..." << std::endl;
-  FHEcontext context(m, p, r, gens, ords);
+  helib::Context context(m, p, r);
   context.zMStar.set_cM(c_m / 100.0);
 
   std::cout << "Building modulus chain..." << std::endl;
@@ -66,7 +66,7 @@ static void BM_thinboot(benchmark::State& state,
   std::cout << "Security: " << context.securityLevel() << std::endl;
 
   std::cout << "Creating secret key..." << std::endl;
-  FHESecKey secret_key(context);
+  helib::SecKey secret_key(context);
   secret_key.GenSecKey();
   std::cout << "Generating key-switching matrices..." << std::endl;
   addSome1DMatrices(secret_key);
@@ -77,8 +77,8 @@ static void BM_thinboot(benchmark::State& state,
 
   // NOTE: For some reason the reCrypt method is not marked const so
   //       I had to remove the const from the public key
-  FHEPubKey& public_key = secret_key;
-  const EncryptedArray& ea = *(context.ea);
+  helib::PubKey& public_key = secret_key;
+  const helib::EncryptedArray& ea = *(context.ea);
 
   long nslots = ea.size();
   std::cout << "Number of slots: " << nslots << std::endl;
@@ -88,7 +88,7 @@ static void BM_thinboot(benchmark::State& state,
     ptxt[i] = std::rand() % 2; // Random 0s and 1s
   }
 
-  Ctxt ctxt(public_key);
+  helib::Ctxt ctxt(public_key);
   ea.encrypt(ctxt, public_key, ptxt);
   for (auto _ : state)
     squareWithThinBoot(public_key, ctxt);
